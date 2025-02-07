@@ -35,7 +35,7 @@ const server = net.createServer((socket) => {
 
     const formattedHeaders = formatHeaders(headers);
     socket.write(
-      `HTTP/1.1 ${responseStatus}\r\n\r\n${formattedHeaders}\r\n\r\n${responseBody}`
+      `HTTP/1.1 ${responseStatus}\r\n${formattedHeaders}\r\n\r\n${responseBody}`
     );
   });
 
