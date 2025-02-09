@@ -1,4 +1,7 @@
-const net = require("net");
+const fs = require("node:fs");
+const net = require("node:net");
+const path = require("node:path");
+
 const HTTP = require("./http");
 
 const formatHeaders = (headers) => {
@@ -13,7 +16,7 @@ const setHeader = (headerKey, headerValue, headerObj) => {
   headerObj[headerKey] = headerValue;
 };
 
-const registeredPaths = ["/", "/echo/:text", "/user-agent"];
+const registeredPaths = ["/", "/echo/:text", "/user-agent", "/files/:filename"];
 const matchRegisteredPath = (pathToMatch) => {
   return registeredPaths.find((currentPath, i) => {
     const currentPathSplits = currentPath.split("/");
@@ -36,6 +39,25 @@ const getHeader = (headerToGet, headers) => {
   );
 
   return matchedHeaderLine.split(":")[1].trim();
+};
+
+const getFile = (fileName) => {
+  const args = process.argv;
+  let dir = "";
+  for (let i = 2; i < args.length; i++) {
+    if (args[i] === "--directory") {
+      dir = args[i + 1];
+      break;
+    }
+  }
+
+  const filePath = path.join(dir, fileName);
+
+  try {
+    if (fs.existsSync(filePath)) return fs.readFileSync(filePath);
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 const server = net.createServer((socket) => {
@@ -62,6 +84,16 @@ const server = net.createServer((socket) => {
       const userAgentHeader = getHeader("User-Agent", reqHeaders);
       responseBody += userAgentHeader;
       setHeader("User-Agent", userAgentHeader, headers);
+    }
+
+    if (path.indexOf("/files" === 0)) {
+      const file = getFile(path.split("/")[2]);
+      if (!file) {
+        statusCode = HTTP.HTTP_NOT_FOUND;
+      } else {
+        statusCode = HTTP.HTTP_OK;
+        responseBody += file.toString();
+      }
     }
 
     setHeader("Content-Length", responseBody.length, headers);

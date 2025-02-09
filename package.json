@@ -4,7 +4,7 @@
   "description": "Build your own HTTP-Server challenge, from CodeCrafters",
   "main": "main.js",
   "scripts": {
-    "dev": "nodemon app/main.js"
+    "dev": "nodemon app/main.js --directory tmp"
   },
   "keywords": [
     "build-your-own-x"
