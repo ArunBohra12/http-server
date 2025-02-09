@@ -10,7 +10,7 @@ const getArgValue = (arg) => {
   let val = "";
   for (let i = 2; i < args.length; i++) {
     if (args[i] === arg) {
-      dir = args[i + 1];
+      val = args[i + 1];
       break;
     }
   }
@@ -57,6 +57,7 @@ const getHeader = (headerToGet, headers) => {
 
 const getFile = (fileName) => {
   const dir = getArgValue("--directory");
+  console.log(dir);
   if (!dir || !fileName) return;
   const filePath = path.join(dir, fileName);
 
@@ -73,7 +74,13 @@ const createFile = (fileName, content) => {
   const filePath = path.join(dir, fileName);
 
   try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdir(dir, { recursive: true }, (err) => {
+        if (err) console.log(err);
+      });
+    }
     fs.writeFileSync(filePath, content);
+
     return true;
   } catch (error) {
     console.log(error);
@@ -127,6 +134,7 @@ const server = net.createServer((socket) => {
           responseBody = requestBody;
         } catch (error) {
           statusCode = HTTP.HTTP_INTERNAL_SERVER_ERROR;
+          console.error(error);
         }
       }
     }
