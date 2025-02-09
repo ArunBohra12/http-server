@@ -51,6 +51,8 @@ const getFile = (fileName) => {
     }
   }
 
+  if (!dir || !fileName) return;
+
   const filePath = path.join(dir, fileName);
 
   try {
