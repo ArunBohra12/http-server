@@ -32,8 +32,7 @@ const server = net.createServer((socket) => {
     let responseBody = "";
 
     const isPathRegistered = matchRegisteredPath(path);
-    const statusCode = isPathRegistered ? HTTP.HTTP_OK : HTTP.HTTP_NOT_FOUND;
-    const responseStatus = HTTP.getResponseStatus(statusCode);
+    let statusCode = isPathRegistered ? HTTP.HTTP_OK : HTTP.HTTP_NOT_FOUND;
 
     const headers = {
       "Content-Type": "text/plain",
@@ -43,17 +42,18 @@ const server = net.createServer((socket) => {
     if (path.indexOf("/echo/") === 0) {
       const text = path.split("/")[2];
       responseBody += text;
+      statusCode = HTTP.HTTP_OK;
     }
 
     if (path === "/user-agent") {
       const userAgentHeader = getHeader("User-Agent", reqHeaders);
       responseBody += userAgentHeader;
-
       setHeader("User-Agent", userAgentHeader, headers);
-      setHeader("Content-Length", responseBody.length, headers);
-      setHeader("Content-Length", responseBody.length, headers);
     }
 
+    setHeader("Content-Length", responseBody.length, headers);
+
+    const responseStatus = HTTP.getResponseStatus(statusCode);
     const formattedHeaders = formatHeaders(headers);
     socket.write(
       `HTTP/1.1 ${responseStatus}\r\n${formattedHeaders}\r\n${responseBody}`
