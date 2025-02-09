@@ -124,6 +124,7 @@ const server = net.createServer((socket) => {
           createFile(fileName, requestBody);
           statusCode = HTTP.HTTP_CREATED;
           setHeader("Content-Type", "application/octet-stream", headers);
+          responseBody = requestBody;
         } catch (error) {
           statusCode = HTTP.HTTP_INTERNAL_SERVER_ERROR;
         }
@@ -131,9 +132,6 @@ const server = net.createServer((socket) => {
     }
 
     setHeader("Content-Length", responseBody.length, headers);
-    if (path.indexOf("/files") === 0 && method === "POST") {
-      setHeader("Content-Length", requestBody.length, headers);
-    }
 
     const responseStatus = HTTP.getResponseStatus(statusCode);
     const formattedHeaders = formatHeaders(headers);
