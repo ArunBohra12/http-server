@@ -4,6 +4,20 @@ const path = require("node:path");
 
 const HTTP = require("./http");
 
+const getArgValue = (arg) => {
+  const args = process.argv;
+
+  let val = "";
+  for (let i = 2; i < args.length; i++) {
+    if (args[i] === arg) {
+      dir = args[i + 1];
+      break;
+    }
+  }
+
+  return val;
+};
+
 const formatHeaders = (headers) => {
   let formattedHeader = "";
   for (const [headerKey, headerValue] of Object.entries(headers)) {
@@ -42,17 +56,8 @@ const getHeader = (headerToGet, headers) => {
 };
 
 const getFile = (fileName) => {
-  const args = process.argv;
-  let dir = "";
-  for (let i = 2; i < args.length; i++) {
-    if (args[i] === "--directory") {
-      dir = args[i + 1];
-      break;
-    }
-  }
-
+  const dir = getArgValue("--directory");
   if (!dir || !fileName) return;
-
   const filePath = path.join(dir, fileName);
 
   try {
@@ -62,11 +67,26 @@ const getFile = (fileName) => {
   }
 };
 
+const createFile = (fileName, content) => {
+  const dir = getArgValue("--directory");
+  if (!dir || !fileName) return;
+  const filePath = path.join(dir, fileName);
+
+  try {
+    fs.writeFileSync(filePath, content);
+    return true;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 const server = net.createServer((socket) => {
   socket.on("data", (data) => {
     const reqData = data.toString().split("\r\n");
     const path = reqData[0].split(" ")[1];
+    const method = reqData[0].split(" ")[0];
     const reqHeaders = reqData.slice(1, reqData.length - 2);
+    const requestBody = reqData.at(-1);
     let responseBody = "";
 
     const isPathRegistered = matchRegisteredPath(path);
@@ -89,17 +109,31 @@ const server = net.createServer((socket) => {
     }
 
     if (path.indexOf("/files") === 0) {
-      const file = getFile(path.split("/")[2]);
-      if (!file) {
-        statusCode = HTTP.HTTP_NOT_FOUND;
-      } else {
-        statusCode = HTTP.HTTP_OK;
-        responseBody += file.toString();
-        setHeader("Content-Type", "application/octet-stream", headers);
+      const fileName = path.split("/")[2];
+      if (method === "GET") {
+        const file = getFile(fileName);
+        if (!file) {
+          statusCode = HTTP.HTTP_NOT_FOUND;
+        } else {
+          statusCode = HTTP.HTTP_OK;
+          responseBody += file.toString();
+          setHeader("Content-Type", "application/octet-stream", headers);
+        }
+      } else if (method === "POST") {
+        try {
+          createFile(fileName, requestBody);
+          statusCode = HTTP.HTTP_CREATED;
+          setHeader("Content-Type", "application/octet-stream", headers);
+        } catch (error) {
+          statusCode = HTTP.HTTP_INTERNAL_SERVER_ERROR;
+        }
       }
     }
 
     setHeader("Content-Length", responseBody.length, headers);
+    if (path.indexOf("/files") === 0 && method === "POST") {
+      setHeader("Content-Length", requestBody.length, headers);
+    }
 
     const responseStatus = HTTP.getResponseStatus(statusCode);
     const formattedHeaders = formatHeaders(headers);
