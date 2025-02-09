@@ -14,8 +14,20 @@ const setHeader = (headerKey, headerValue, headerObj) => {
 };
 
 const registeredPaths = ["/", "/echo/:text", "/user-agent"];
-const matchRegisteredPath = (path) => {
-  return registeredPaths.find((currentPath) => currentPath === path);
+const matchRegisteredPath = (pathToMatch) => {
+  return registeredPaths.find((currentPath, i) => {
+    const currentPathSplits = currentPath.split("/");
+    const pathToMatchSplits = pathToMatch.split("/");
+
+    if (currentPathSplits.length !== pathToMatchSplits.length) return false;
+
+    for (let i = 0; i < pathToMatchSplits.length; i++) {
+      if (currentPathSplits[i][0] === ":") continue;
+      if (currentPathSplits[i] !== pathToMatchSplits[i]) return false;
+    }
+
+    return true;
+  });
 };
 
 const getHeader = (headerToGet, headers) => {
@@ -42,7 +54,6 @@ const server = net.createServer((socket) => {
     if (path.indexOf("/echo/") === 0) {
       const text = path.split("/")[2];
       responseBody += text;
-      statusCode = HTTP.HTTP_OK;
     }
 
     if (path === "/user-agent") {
