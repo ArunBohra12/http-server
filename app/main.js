@@ -31,9 +31,11 @@ const matchRegisteredPath = (pathToMatch) => {
 };
 
 const getHeader = (headerToGet, headers) => {
-  return headers.find(
+  const matchedHeaderLine = headers.find(
     (header) => header.split(":")[0].toLowerCase() === headerToGet.toLowerCase()
   );
+
+  return matchedHeaderLine.split(":")[1].trim();
 };
 
 const server = net.createServer((socket) => {
