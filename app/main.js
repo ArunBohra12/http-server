@@ -88,7 +88,7 @@ const server = net.createServer((socket) => {
       setHeader("User-Agent", userAgentHeader, headers);
     }
 
-    if (path.indexOf("/files" === 0)) {
+    if (path.indexOf("/files") === 0) {
       const file = getFile(path.split("/")[2]);
       if (!file) {
         statusCode = HTTP.HTTP_NOT_FOUND;
