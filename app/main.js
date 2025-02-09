@@ -93,7 +93,7 @@ const server = net.createServer((socket) => {
       } else {
         statusCode = HTTP.HTTP_OK;
         responseBody += file.toString();
-        setHeader("Content-Type", "application/octet-stream");
+        setHeader("Content-Type", "application/octet-stream", headers);
       }
     }
 
