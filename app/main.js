@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const net = require("node:net");
 const path = require("node:path");
+const zlib = require("node:zlib");
 
 const HTTP = require("./http");
 
@@ -57,7 +58,6 @@ const getHeader = (headerToGet, headers) => {
 
 const getFile = (fileName) => {
   const dir = getArgValue("--directory");
-  console.log(dir);
   if (!dir || !fileName) return;
   const filePath = path.join(dir, fileName);
 
@@ -106,15 +106,26 @@ const server = net.createServer((socket) => {
       "Content-Length": responseBody.length,
     };
 
+    const compressionHeaders = getHeader("Accept-Encoding", reqHeaders).split(
+      ", "
+    );
+
+    let compressionHeaderAvailable = compressionHeaders.find(
+      (compressionScheme) =>
+        supportedCompressionSchemes.includes(compressionScheme)
+    );
+
+    let encodedResponse;
+
     if (path.indexOf("/echo/") === 0) {
       const text = path.split("/")[2];
-      const compressionHeader = getHeader("Accept-Encoding", reqHeaders);
 
-      if (supportedCompressionSchemes.includes(compressionHeader)) {
-        setHeader("Content-Encoding", compressionHeader, headers);
+      if (compressionHeaderAvailable) {
+        encodedResponse = zlib.gzipSync(text);
+        setHeader("Content-Encoding", compressionHeaderAvailable, headers);
+      } else {
+        responseBody += text;
       }
-
-      responseBody += text;
     }
 
     if (path === "/user-agent") {
@@ -147,13 +158,23 @@ const server = net.createServer((socket) => {
       }
     }
 
-    setHeader("Content-Length", responseBody.length, headers);
+    if (encodedResponse) {
+      setHeader("Content-Length", encodedResponse.length, headers);
+    } else {
+      setHeader("Content-Length", responseBody.length, headers);
+    }
 
     const responseStatus = HTTP.getResponseStatus(statusCode);
     const formattedHeaders = formatHeaders(headers);
-    socket.write(
-      `HTTP/1.1 ${responseStatus}\r\n${formattedHeaders}\r\n${responseBody}`
-    );
+
+    if (compressionHeaderAvailable) {
+      socket.write(`HTTP/1.1 ${responseStatus}\r\n${formattedHeaders}\r\n`);
+      socket.write(encodedResponse);
+    } else {
+      socket.write(
+        `HTTP/1.1 ${responseStatus}\r\n${formattedHeaders}\r\n${responseBody}`
+      );
+    }
   });
 
   socket.on("close", () => socket.end());
