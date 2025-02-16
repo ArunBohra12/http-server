@@ -120,7 +120,7 @@ const server = net.createServer((socket) => {
     if (path.indexOf("/echo/") === 0) {
       const text = path.split("/")[2];
 
-      if (compressionHeaderAvailable) {
+      if (compressionHeaderAvailable && text) {
         encodedResponse = zlib.gzipSync(text);
         setHeader("Content-Encoding", compressionHeaderAvailable, headers);
       } else {
@@ -167,7 +167,7 @@ const server = net.createServer((socket) => {
     const responseStatus = HTTP.getResponseStatus(statusCode);
     const formattedHeaders = formatHeaders(headers);
 
-    if (compressionHeaderAvailable) {
+    if (compressionHeaderAvailable && encodedResponse) {
       socket.write(`HTTP/1.1 ${responseStatus}\r\n${formattedHeaders}\r\n`);
       socket.write(encodedResponse);
     } else {
