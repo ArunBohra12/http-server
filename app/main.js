@@ -87,6 +87,8 @@ const createFile = (fileName, content) => {
   }
 };
 
+const supportedCompressionSchemes = ["gzip"];
+
 const server = net.createServer((socket) => {
   socket.on("data", (data) => {
     const reqData = data.toString().split("\r\n");
@@ -106,6 +108,12 @@ const server = net.createServer((socket) => {
 
     if (path.indexOf("/echo/") === 0) {
       const text = path.split("/")[2];
+      const compressionHeader = getHeader("Accept-Encoding", reqHeaders);
+
+      if (supportedCompressionSchemes.includes(compressionHeader)) {
+        setHeader("Content-Encoding", compressionHeader, headers);
+      }
+
       responseBody += text;
     }
 
